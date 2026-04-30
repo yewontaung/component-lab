@@ -24,7 +24,7 @@ export default function RootLayout({
       className={`h-full antialiased`}
       suppressHydrationWarning>
       <body className="min-h-full flex flex-col">
-        <ThemeProvider attribute={"class"} defaultTheme="dark" enableSystem>{children}</ThemeProvider>
+        <ThemeProvider attribute={"class"} defaultTheme="dark">{children}</ThemeProvider>
       </body>
     </html>
   );
