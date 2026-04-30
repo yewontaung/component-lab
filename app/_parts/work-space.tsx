@@ -7,9 +7,11 @@ import { AlignHorizontalJustifyCenter, AlignHorizontalJustifyEnd, AlignHorizonta
 import { useTheme } from "next-themes"
 import type * as Monaco from "monaco-editor"
 import { useEditor } from "@/hooks/use-editor"
-import { bootstrapLink, tailwindLink } from "@/lib/constants"
+import { bootstrapcss, bootstrapjs, bootstrapLink, tailwindjs, tailwindLink } from "@/lib/constants"
 import { useEffect, useRef, useState } from "react"
 import { Horizontal, useAlignment, usePreview, Vertical } from "@/hooks/use-preview"
+import Script from "next/script"
+import { cn } from "@/lib/utils"
 
 export const WorkSpace = ({ className }: { className?: string }) => {
     return (
@@ -29,6 +31,7 @@ const PreviewPanel = ({ className }: { className?: string }) => {
     )
 }
 
+
 const PreviewFrame = ({ className }: { className?: string }) => {
     const codes = useEditor(state => state.codes)
     const css = useEditor(state => state.css)
@@ -40,33 +43,79 @@ const PreviewFrame = ({ className }: { className?: string }) => {
 
     const iframeRef = useRef<HTMLIFrameElement | null>(null)
 
-    const refresh = (html: string) => {
-        const iframe = iframeRef?.current
-        if (iframe) iframe.srcdoc = html
-    }
+    // const html = `
+    //         <html>
+    //             <head>
+    //                 ${css === "tailwind" ? tailwindLink : ''}
+    //                 ${css === "bootstrap" ? bootstrapLink : ''}
+    //             </head>
+    //             <body>
+    //                 <div id="mainFrame"
+    //                     class="
+    //                     ${css === "bootstrap" ? "vh-100" : ''}
+    //                     ${css === "tailwind" ? "h-screen" : ''}
+    //                     ${alignment(h, v)}
+    //                     "
+    //                 >
+    //                     ${codes}
+    //                 </div>
+    //             </body>
+    //         </html>
+    //     `
 
-    useEffect(() => {
-
-        const html = `
+    const html = `
             <html>
                 <head>
-                    ${css === "tailwind" ? tailwindLink : ''}
-                    ${css === "bootstrap" ? bootstrapLink : ''}
                 </head>
                 <body>
-                    <div 
-                        class="
-                        ${css === "bootstrap" ? "vh-100" : ''}
-                        ${css === "tailwind" ? "h-screen" : ''}
-                        ${alignment(h, v)}
-                        "
-                    >
-                        ${codes}
+                    <div id="mainFrame">
                     </div>
                 </body>
             </html>
         `
-        refresh(html)
+
+    useEffect(() => {
+        const iframe = iframeRef?.current
+        if (iframe) iframe.srcdoc = html
+    }, [iframeRef, html])
+
+    useEffect(() => {
+
+        const refresh = () => {
+
+            const doc = iframeRef?.current?.contentDocument
+
+            const mainFrame = doc?.querySelector("#mainFrame")
+
+            if(mainFrame) {
+                mainFrame.innerHTML = codes as string
+                mainFrame.className = cn(`
+                    ${css === "bootstrap" ? "vh-100" : ''}
+                    ${css === "tailwind" ? "h-screen" : ''}
+                    ${alignment(h, v)}
+                `)
+            }
+        }
+
+        const load = () => {
+            const doc = iframeRef?.current?.contentDocument
+            if(!doc) return
+
+            const head = doc?.head
+            head.innerHTML = ""
+            if (css === "tailwind") {
+                const script = doc.createElement("script")
+                script.src = tailwindjs
+                script.onload = refresh
+                head.appendChild(script)
+            } else if (css === "bootstrap") {
+                head.innerHTML = bootstrapLink
+            }
+        }
+        load()
+        
+        if(codes) refresh()
+
     }, [codes, css, h, v, alignment])
 
     return (
