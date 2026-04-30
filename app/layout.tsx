@@ -4,8 +4,8 @@ import "@fontsource/inter/400.css";
 import "@fontsource/inter/500.css";
 import "@fontsource/inter/600.css";
 import "@fontsource/jetbrains-mono/400.css";
+import { ThemeProvider } from "@/components/theme-provider";
 
-import { ThemeProvider } from "next-themes";
 
 
 export const metadata: Metadata = {
@@ -24,7 +24,10 @@ export default function RootLayout({
       className={`h-full antialiased`}
       suppressHydrationWarning>
       <body className="min-h-full flex flex-col">
-        <ThemeProvider attribute={"class"} defaultTheme="dark">{children}</ThemeProvider>
+        <ThemeProvider attribute={"class"} 
+          defaultTheme="dark" 
+          enableSystem
+          disableTransitionOnChange>{children}</ThemeProvider>
       </body>
     </html>
   );
