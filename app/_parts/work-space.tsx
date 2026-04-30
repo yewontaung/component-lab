@@ -8,7 +8,7 @@ import { useTheme } from "next-themes"
 import type * as Monaco from "monaco-editor"
 import { useEditor } from "@/hooks/use-editor"
 import { bootstrapLink, tailwindLink } from "@/lib/constants"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Horizontal, useAlignment, usePreview, Vertical } from "@/hooks/use-preview"
 
 export const WorkSpace = ({ className }: { className?: string }) => {
@@ -20,7 +20,7 @@ export const WorkSpace = ({ className }: { className?: string }) => {
     )
 }
 
-const PreviewPanel = ({className}:{className?:string}) => {
+const PreviewPanel = ({ className }: { className?: string }) => {
     return (
         <div className={`border rounded ${className}`}>
             <PreviewTools />
@@ -29,7 +29,7 @@ const PreviewPanel = ({className}:{className?:string}) => {
     )
 }
 
-const PreviewFrame = ({className}:{className?:string}) => {
+const PreviewFrame = ({ className }: { className?: string }) => {
     const codes = useEditor(state => state.codes)
     const css = useEditor(state => state.css)
 
@@ -38,33 +38,45 @@ const PreviewFrame = ({className}:{className?:string}) => {
 
     const alignment = useAlignment()
 
-    const html = `
-        <html>
-            <head>
-                ${css === "tailwind" ? tailwindLink : ''}
-                ${css === "bootstrap" ? bootstrapLink : ''}
-            </head>
-            <body>
-                <div 
-                    class="
-                    ${css === "bootstrap" ? "vh-100" : ''}
-                    ${css === "tailwind" ? "h-screen" : ''}
-                    ${alignment(h, v)}
-                    "
-                >
-                    ${codes}
-                </div>
-            </body>
-        </html>
-    `
+    const iframeRef = useRef<HTMLIFrameElement | null>(null)
+
+    const refresh = (html: string) => {
+        const iframe = iframeRef?.current
+        if (iframe) iframe.srcdoc = html
+    }
+
+    useEffect(() => {
+
+        const html = `
+            <html>
+                <head>
+                    ${css === "tailwind" ? tailwindLink : ''}
+                    ${css === "bootstrap" ? bootstrapLink : ''}
+                </head>
+                <body>
+                    <div 
+                        class="
+                        ${css === "bootstrap" ? "vh-100" : ''}
+                        ${css === "tailwind" ? "h-screen" : ''}
+                        ${alignment(h, v)}
+                        "
+                    >
+                        ${codes}
+                    </div>
+                </body>
+            </html>
+        `
+        refresh(html)
+    }, [codes, css, h, v, alignment])
+
     return (
         <div className={`p-2 h-[400] ${className}`}>
-            <iframe sandbox="allow-scripts allow-same-origin" className="h-full w-full" srcDoc={html} />
+            <iframe ref={iframeRef} sandbox="allow-scripts allow-same-origin" className="h-full w-full" />
         </div>
     )
 }
 
-const PreviewTools = ({className}:{className?:string}) => {
+const PreviewTools = ({ className }: { className?: string }) => {
     const setHorizontal = usePreview(state => state.setHorizontal)
     const setVertical = usePreview(state => state.setVertical)
 
@@ -73,14 +85,14 @@ const PreviewTools = ({className}:{className?:string}) => {
             <div>Preview</div>
             <div className="flex gap-x-3">
                 <ToggleGroup variant={"outline"} onValueChange={value => value && setHorizontal(value[0] as Horizontal)}>
-                    <ToggleGroupItem value="start"><AlignHorizontalJustifyStart/></ToggleGroupItem>
-                    <ToggleGroupItem value="center"><AlignHorizontalJustifyCenter/></ToggleGroupItem>
-                    <ToggleGroupItem value="end"><AlignHorizontalJustifyEnd/></ToggleGroupItem>
+                    <ToggleGroupItem value="start"><AlignHorizontalJustifyStart /></ToggleGroupItem>
+                    <ToggleGroupItem value="center"><AlignHorizontalJustifyCenter /></ToggleGroupItem>
+                    <ToggleGroupItem value="end"><AlignHorizontalJustifyEnd /></ToggleGroupItem>
                 </ToggleGroup>
                 <ToggleGroup variant={"outline"} onValueChange={value => setVertical(value && value[0] as Vertical)}>
-                    <ToggleGroupItem value="top"><AlignVerticalJustifyStart/></ToggleGroupItem>
-                    <ToggleGroupItem value="center"><AlignVerticalJustifyCenter/></ToggleGroupItem>
-                    <ToggleGroupItem value="bottom"><AlignVerticalJustifyEnd/></ToggleGroupItem>
+                    <ToggleGroupItem value="top"><AlignVerticalJustifyStart /></ToggleGroupItem>
+                    <ToggleGroupItem value="center"><AlignVerticalJustifyCenter /></ToggleGroupItem>
+                    <ToggleGroupItem value="bottom"><AlignVerticalJustifyEnd /></ToggleGroupItem>
                 </ToggleGroup>
             </div>
         </div>
@@ -97,11 +109,11 @@ const CodePanel = ({ className }: { className?: string }) => {
 }
 
 const CodeEditor = ({ className }: { className?: string }) => {
-    const {theme} = useTheme()
+    const { theme } = useTheme()
     const setCodes = useEditor(state => state.setCodes)
     const setEditor = useEditor(state => state.setEditor)
 
-    const onMount:OnMount = (editor, monaco: typeof Monaco) => {
+    const onMount: OnMount = (editor, monaco: typeof Monaco) => {
         setEditor(editor)
         editor.focus()
         editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
@@ -147,10 +159,10 @@ const Actions = ({ className }: { className?: string }) => {
     )
 }
 
-const CopyButton = ({className}:{className?:string}) => {
+const CopyButton = ({ className }: { className?: string }) => {
     const [copying, setCopying] = useState(false)
     useEffect(() => {
-        if(!copying) return
+        if (!copying) return
         setTimeout(() => setCopying(!copying), 1500)
     }, [copying])
     const editor = useEditor(state => state.editor)
